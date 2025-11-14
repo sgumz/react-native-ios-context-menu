@@ -142,13 +142,20 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
 
     // Remove pill background styling
     if #available(iOS 15.0, *) {
-      var config = UIButton.Configuration.plain()
-      config.background.backgroundColor = .clear
-      config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
-      self.configuration = config
+      // Prevent automatic configuration updates
+      self.automaticallyUpdatesConfiguration = false
+
+      // Set configuration to nil to disable configuration system entirely
+      // This prevents the automatic pill styling and padding
+      self.configuration = nil
+      self.backgroundColor = .clear
     } else {
       self.backgroundColor = .clear
     }
+
+    // Disable autoresizing mask to prevent button from expanding
+    self.translatesAutoresizingMaskIntoConstraints = true
+    self.autoresizesSubviews = false
 
     // Prevent button from expanding beyond React Native frame
     self.setContentHuggingPriority(.defaultLow, for: .horizontal)
