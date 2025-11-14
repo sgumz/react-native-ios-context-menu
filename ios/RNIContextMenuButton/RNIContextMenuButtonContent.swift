@@ -159,6 +159,12 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     self.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     self.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
 
+    // Disable all automatic insets and padding
+    if #available(iOS 15.0, *) {
+      self.configuration?.contentInsets = .zero
+      self.configurationUpdateHandler = nil
+    }
+
     // Remove button styling
     if #available(iOS 15.0, *) {
       self._removeButtonStyling();
@@ -173,15 +179,31 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     // Prevent automatic configuration updates
     self.automaticallyUpdatesConfiguration = false;
 
-    // CRITICAL: Set configuration to nil to completely disable UIButton styling
-    self.configuration = nil;
-    self.backgroundColor = .clear;
+    // Use .plain() configuration as per Apple's guidance for menu buttons
+    // Setting to nil causes UIButton to use default styling
+    var config = UIButton.Configuration.plain();
 
-    // Ensure no tint color or layer styling
+    // Remove ALL styling and padding
+    config.background.backgroundColor = .clear;
+    config.background.backgroundColorTransformer = nil;
+    config.background.visualEffect = nil;
+    config.background.strokeColor = .clear;
+    config.background.strokeWidth = 0;
+    config.background.cornerRadius = 0;
+    config.baseBackgroundColor = .clear;
+    config.baseForegroundColor = .clear;
+
+    // CRITICAL: Set contentInsets to zero and use small size
+    config.contentInsets = .zero;
+    config.imagePadding = 0;
+    config.titlePadding = 0;
+
+    // Disable macCatalyst hover effects
+    config.macIdiomStyle = .automatic;
+
+    self.configuration = config;
+    self.backgroundColor = .clear;
     self.tintColor = .clear;
-    self.layer.backgroundColor = UIColor.clear.cgColor;
-    self.layer.cornerRadius = 0;
-    self.layer.masksToBounds = false;
 
     // Force layout update
     self.setNeedsLayout();
