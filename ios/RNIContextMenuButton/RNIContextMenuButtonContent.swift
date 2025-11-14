@@ -145,15 +145,17 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     // Clip any content that extends beyond bounds
     self.clipsToBounds = true;
 
-    // Disable autoresizing mask to prevent button from expanding
+    // CRITICAL: Keep autoresizing enabled so React Native can set frame
+    // But prevent the button from resisting size changes
     self.translatesAutoresizingMaskIntoConstraints = true
     self.autoresizesSubviews = false
 
-    // Prevent button from expanding beyond React Native frame
-    self.setContentHuggingPriority(.defaultLow, for: .horizontal)
-    self.setContentHuggingPriority(.defaultLow, for: .vertical)
-    self.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-    self.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+    // CRITICAL: Use required priority to prevent expansion
+    // This forces the button to stay at its intrinsic content size
+    self.setContentHuggingPriority(.required, for: .horizontal)
+    self.setContentHuggingPriority(.required, for: .vertical)
+    self.setContentCompressionResistancePriority(.required, for: .horizontal)
+    self.setContentCompressionResistancePriority(.required, for: .vertical)
 
     // Disable all automatic insets and padding
     if #available(iOS 15.0, *) {
