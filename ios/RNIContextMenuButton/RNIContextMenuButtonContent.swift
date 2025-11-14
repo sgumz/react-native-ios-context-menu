@@ -117,6 +117,12 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
       guard #available(iOS 14.0, *) else { return };
       self.showsMenuAsPrimaryAction = newValue;
     }
+    didSet {
+      // After showsMenuAsPrimaryAction is set, forcefully remove any styling it added
+      if #available(iOS 15.0, *) {
+        self._removeButtonStyling();
+      }
+    }
   };
   
   // MARK: Init
@@ -140,19 +146,6 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     self.isEnabled = true;
     self.isAccessibilityElement = false;
 
-    // Remove pill background styling
-    if #available(iOS 15.0, *) {
-      // Prevent automatic configuration updates
-      self.automaticallyUpdatesConfiguration = false
-
-      // Set configuration to nil to disable configuration system entirely
-      // This prevents the automatic pill styling and padding
-      self.configuration = nil
-      self.backgroundColor = .clear
-    } else {
-      self.backgroundColor = .clear
-    }
-
     // Disable autoresizing mask to prevent button from expanding
     self.translatesAutoresizingMaskIntoConstraints = true
     self.autoresizesSubviews = false
@@ -162,6 +155,40 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     self.setContentHuggingPriority(.defaultLow, for: .vertical)
     self.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     self.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+
+    // Remove button styling
+    if #available(iOS 15.0, *) {
+      self._removeButtonStyling();
+    } else {
+      self.backgroundColor = .clear
+    }
+  };
+
+  func _removeButtonStyling() {
+    guard #available(iOS 15.0, *) else { return };
+
+    // Prevent automatic configuration updates
+    self.automaticallyUpdatesConfiguration = false;
+
+    // Create a completely transparent configuration
+    var config = UIButton.Configuration.plain();
+    config.background.backgroundColor = .clear;
+    config.background.cornerRadius = 0;
+    config.baseForegroundColor = nil;
+    config.baseBackgroundColor = .clear;
+    config.contentInsets = .zero;
+
+    // Remove any visual effects
+    config.background.visualEffect = nil;
+    config.background.strokeColor = .clear;
+    config.background.strokeWidth = 0;
+
+    self.configuration = config;
+    self.backgroundColor = .clear;
+
+    // Force layout update
+    self.setNeedsLayout();
+    self.layoutIfNeeded();
   };
 
   // Override intrinsicContentSize to prevent button expansion
@@ -185,6 +212,27 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     // Restore the bounds set by React Native if UIButton tried to change them
     if self.bounds != originalBounds {
       self.bounds = originalBounds
+    }
+  };
+
+  // Override bounds setter to lock the size
+  private var _lockedBounds: CGRect?
+  public override var bounds: CGRect {
+    get {
+      return super.bounds
+    }
+    set {
+      // Store the bounds being set by React Native
+      if _lockedBounds == nil || newValue != .zero {
+        _lockedBounds = newValue
+      }
+
+      // Always use the locked bounds if available
+      if let locked = _lockedBounds, locked != .zero {
+        super.bounds = locked
+      } else {
+        super.bounds = newValue
+      }
     }
   };
 
