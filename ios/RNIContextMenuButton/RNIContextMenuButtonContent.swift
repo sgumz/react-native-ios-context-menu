@@ -146,6 +146,9 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     self.isEnabled = true;
     self.isAccessibilityElement = false;
 
+    // Clip any content that extends beyond bounds
+    self.clipsToBounds = true;
+
     // Disable autoresizing mask to prevent button from expanding
     self.translatesAutoresizingMaskIntoConstraints = true
     self.autoresizesSubviews = false
@@ -213,6 +216,21 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     if self.bounds != originalBounds {
       self.bounds = originalBounds
     }
+
+    // Remove any background views that UIButton adds for the pill styling
+    // UIButton adds internal subviews for the pill background - remove them
+    if #available(iOS 15.0, *) {
+      for subview in self.subviews {
+        // Check if this is a UIButton internal background view
+        let className = String(describing: type(of: subview))
+        if className.contains("Background") ||
+           className.contains("Visual") ||
+           className.contains("Effect") {
+          subview.isHidden = true
+          subview.alpha = 0
+        }
+      }
+    }
   };
 
   // Override bounds setter to lock the size
@@ -222,16 +240,28 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
       return super.bounds
     }
     set {
-      // Store the bounds being set by React Native
-      if _lockedBounds == nil || newValue != .zero {
-        _lockedBounds = newValue
+      var finalBounds = newValue
+
+      // Enforce maximum size to prevent button expansion
+      // This prevents UIButton from creating massive pills
+      let maxDimension: CGFloat = 50 // Allow max 50pt in any direction
+      if finalBounds.size.width > maxDimension {
+        finalBounds.size.width = maxDimension
+      }
+      if finalBounds.size.height > maxDimension {
+        finalBounds.size.height = maxDimension
       }
 
-      // Always use the locked bounds if available
+      // Store the first valid bounds set by React Native
+      if _lockedBounds == nil && finalBounds != .zero {
+        _lockedBounds = finalBounds
+      }
+
+      // Use locked bounds if we have them, otherwise use the constrained bounds
       if let locked = _lockedBounds, locked != .zero {
         super.bounds = locked
       } else {
-        super.bounds = newValue
+        super.bounds = finalBounds
       }
     }
   };
