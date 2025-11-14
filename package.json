@@ -2,9 +2,9 @@
   "name": "react-native-ios-context-menu",
   "version": "3.2.1",
   "description": "A react-native component to use context menu's (UIMenu) on iOS 13/14+",
-  "main": "lib/commonjs/index",
-  "module": "lib/module/index",
-  "types": "lib/typescript/module/src/index.d.ts",
+  "main": "src/index",
+  "module": "src/index",
+  "types": "src/index",
   "react-native": "src/index",
   "source": "src/index",
   "files": [
