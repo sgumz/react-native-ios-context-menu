@@ -236,8 +236,39 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     }
   };
 
-  // Override intrinsicContentSize to prevent button expansion
+  // Override intrinsicContentSize to use subview size (React Native children)
+  // This prevents the button from expanding to fill available space
   public override var intrinsicContentSize: CGSize {
+    // Calculate size based on subviews (React Native children)
+    var maxWidth: CGFloat = 0
+    var maxHeight: CGFloat = 0
+
+    for subview in self.subviews {
+      let subviewSize = subview.intrinsicContentSize
+      if subviewSize.width != UIView.noIntrinsicMetric {
+        maxWidth = max(maxWidth, subviewSize.width)
+      } else {
+        maxWidth = max(maxWidth, subview.bounds.width)
+      }
+
+      if subviewSize.height != UIView.noIntrinsicMetric {
+        maxHeight = max(maxHeight, subviewSize.height)
+      } else {
+        maxHeight = max(maxHeight, subview.bounds.height)
+      }
+    }
+
+    // If we have valid dimensions, use them
+    if maxWidth > 0 && maxHeight > 0 {
+      return CGSize(width: maxWidth, height: maxHeight)
+    }
+
+    // If bounds are set, use them (React Native frame)
+    if self.bounds.size.width > 0 && self.bounds.size.height > 0 {
+      return self.bounds.size
+    }
+
+    // Fallback to no intrinsic metric
     return CGSize(
       width: UIView.noIntrinsicMetric,
       height: UIView.noIntrinsicMetric
@@ -273,6 +304,9 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
         }
       }
     }
+
+    // Invalidate intrinsic content size when layout changes
+    self.invalidateIntrinsicContentSize()
   };
 
   // Override bounds setter to lock the size
@@ -587,6 +621,8 @@ extension RNIContextMenuButtonContent: RNIContentViewDelegate {
     superBlock: () -> Void
   ) {
     self.addSubview(childComponentView);
+    // Invalidate intrinsic content size when child is mounted
+    self.invalidateIntrinsicContentSize();
   };
   
   public func notifyOnUnmountChildComponentView(
