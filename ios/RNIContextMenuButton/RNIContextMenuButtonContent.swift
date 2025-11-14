@@ -173,21 +173,15 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     // Prevent automatic configuration updates
     self.automaticallyUpdatesConfiguration = false;
 
-    // Create a completely transparent configuration
-    var config = UIButton.Configuration.plain();
-    config.background.backgroundColor = .clear;
-    config.background.cornerRadius = 0;
-    config.baseForegroundColor = nil;
-    config.baseBackgroundColor = .clear;
-    config.contentInsets = .zero;
-
-    // Remove any visual effects
-    config.background.visualEffect = nil;
-    config.background.strokeColor = .clear;
-    config.background.strokeWidth = 0;
-
-    self.configuration = config;
+    // CRITICAL: Set configuration to nil to completely disable UIButton styling
+    self.configuration = nil;
     self.backgroundColor = .clear;
+
+    // Ensure no tint color or layer styling
+    self.tintColor = .clear;
+    self.layer.backgroundColor = UIColor.clear.cgColor;
+    self.layer.cornerRadius = 0;
+    self.layer.masksToBounds = false;
 
     // Force layout update
     self.setNeedsLayout();
@@ -262,6 +256,41 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
         super.bounds = locked
       } else {
         super.bounds = finalBounds
+      }
+    }
+  };
+
+  // Override frame setter to prevent UIButton from expanding
+  // This is CRITICAL as React Native sets frame, not just bounds
+  private var _lockedFrame: CGRect?
+  public override var frame: CGRect {
+    get {
+      return super.frame
+    }
+    set {
+      var finalFrame = newValue
+
+      // Enforce maximum size to prevent button pill expansion
+      let maxDimension: CGFloat = 50 // Max 50pt in any direction
+      if finalFrame.size.width > maxDimension {
+        finalFrame.size.width = maxDimension
+      }
+      if finalFrame.size.height > maxDimension {
+        finalFrame.size.height = maxDimension
+      }
+
+      // Lock the first valid frame from React Native
+      if _lockedFrame == nil && finalFrame.size != .zero {
+        _lockedFrame = finalFrame
+      }
+
+      // Preserve the origin, but lock the size
+      if let locked = _lockedFrame, locked.size != .zero {
+        var constrainedFrame = finalFrame
+        constrainedFrame.size = locked.size
+        super.frame = constrainedFrame
+      } else {
+        super.frame = finalFrame
       }
     }
   };
