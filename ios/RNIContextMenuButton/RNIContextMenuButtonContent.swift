@@ -149,6 +149,17 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     } else {
       self.backgroundColor = .clear
     }
+
+    // Prevent button from expanding beyond React Native frame
+    self.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    self.setContentHuggingPriority(.defaultLow, for: .vertical)
+    self.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    self.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+  };
+
+  // Override intrinsicContentSize to prevent button expansion
+  public override var intrinsicContentSize: CGSize {
+    return .zero
   };
     
   // MARK: Functions
