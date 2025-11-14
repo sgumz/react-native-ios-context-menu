@@ -136,9 +136,19 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
   func _setupIfNeeded(){
     guard !self._didSetup else { return };
     self._didSetup = true;
-    
+
     self.isEnabled = true;
     self.isAccessibilityElement = false;
+
+    // Remove pill background styling
+    if #available(iOS 15.0, *) {
+      var config = UIButton.Configuration.plain()
+      config.background.backgroundColor = .clear
+      config.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+      self.configuration = config
+    } else {
+      self.backgroundColor = .clear
+    }
   };
     
   // MARK: Functions
