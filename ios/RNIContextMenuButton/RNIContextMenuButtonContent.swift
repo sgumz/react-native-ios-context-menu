@@ -159,9 +159,28 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
 
   // Override intrinsicContentSize to prevent button expansion
   public override var intrinsicContentSize: CGSize {
-    return .zero
+    return CGSize(
+      width: UIView.noIntrinsicMetric,
+      height: UIView.noIntrinsicMetric
+    )
   };
-    
+
+  // Override sizeThatFits to respect the current bounds
+  public override func sizeThatFits(_ size: CGSize) -> CGSize {
+    return self.bounds.size
+  };
+
+  // Override layoutSubviews to prevent UIButton from resizing
+  public override func layoutSubviews() {
+    let originalBounds = self.bounds
+    super.layoutSubviews()
+
+    // Restore the bounds set by React Native if UIButton tried to change them
+    if self.bounds != originalBounds {
+      self.bounds = originalBounds
+    }
+  };
+
   // MARK: Functions
   // ---------------
   
