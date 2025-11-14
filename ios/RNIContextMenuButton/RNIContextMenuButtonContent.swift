@@ -46,9 +46,10 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
   
   var _deferredElementCompletionMap:
     [String: RNIDeferredMenuElement.CompletionHandler] = [:];
-    
+
   weak var navEventsVC: RNINavigationEventsReportingViewController?;
   var longPressGestureRecognizer: UILongPressGestureRecognizer!;
+  var tapGestureRecognizer: UITapGestureRecognizer?;
     
   // MARK: Public Properties
   // -----------------------
@@ -113,15 +114,10 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
   };
   
   @objc public var isMenuPrimaryAction = false {
-    willSet {
-      guard #available(iOS 14.0, *) else { return };
-      self.showsMenuAsPrimaryAction = newValue;
-    }
     didSet {
-      // After showsMenuAsPrimaryAction is set, forcefully remove any styling it added
-      if #available(iOS 15.0, *) {
-        self._removeButtonStyling();
-      }
+      // DON'T use showsMenuAsPrimaryAction as it automatically adds pill styling
+      // Instead, we'll use a tap gesture recognizer to present the menu
+      self._setupMenuPrimaryAction();
     }
   };
   
@@ -171,6 +167,9 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     } else {
       self.backgroundColor = .clear
     }
+
+    // Setup menu primary action if needed
+    self._setupMenuPrimaryAction();
   };
 
   func _removeButtonStyling() {
@@ -208,6 +207,33 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
     // Force layout update
     self.setNeedsLayout();
     self.layoutIfNeeded();
+  };
+
+  func _setupMenuPrimaryAction() {
+    guard #available(iOS 14.0, *) else { return };
+
+    if self.isMenuPrimaryAction {
+      // DON'T use showsMenuAsPrimaryAction - it adds pill background
+      // Instead, add a tap gesture to present the menu manually
+      self.showsMenuAsPrimaryAction = false;
+
+      if self.tapGestureRecognizer == nil {
+        let tapGesture = UITapGestureRecognizer(
+          target: self,
+          action: #selector(self.handleTapGesture(_:))
+        );
+        tapGesture.numberOfTapsRequired = 1;
+        self.addGestureRecognizer(tapGesture);
+        self.tapGestureRecognizer = tapGesture;
+      }
+    } else {
+      // Remove tap gesture if isMenuPrimaryAction is false
+      if let tapGesture = self.tapGestureRecognizer {
+        self.removeGestureRecognizer(tapGesture);
+        self.tapGestureRecognizer = nil;
+      }
+      self.showsMenuAsPrimaryAction = false;
+    }
   };
 
   // Override intrinsicContentSize to prevent button expansion
@@ -378,6 +404,17 @@ public final class RNIContextMenuButtonContent: UIButton, RNIContentView {
   
   @objc func handleLongPressGesture(_ sender: UILongPressGestureRecognizer){
     // no-op
+  };
+
+  @objc func handleTapGesture(_ sender: UITapGestureRecognizer) {
+    guard #available(iOS 14.0, *),
+          sender.state == .ended,
+          self.isMenuPrimaryAction,
+          !self.isContextMenuVisible
+    else { return };
+
+    // Present the menu programmatically on tap
+    try? self.presentMenu();
   };
   
   func attachToParentVC(){
